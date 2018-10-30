@@ -1,41 +1,43 @@
 package;
 
-import kha.graphics5.MipMapFilter;
-import kha.graphics5.TextureFilter;
+import kha.graphics5.TextureFormat;
 import kha.graphics5.TextureAddressing;
-import kha.graphics4.TextureFormat;
-import kha.Color;
-import kha.Framebuffer;
-import kha.Image;
-import kha.graphics4.IndexBuffer;
-import kha.graphics4.PipelineState;
-import kha.graphics4.Usage;
-import kha.graphics4.VertexBuffer;
-import kha.graphics4.VertexData;
-import kha.graphics4.VertexStructure;
 import kha.graphics4.ConstantLocation;
-import kha.graphics4.CompareMode;
-import kha.graphics4.CullMode;
+import kha.graphics4.VertexStructure;
+import kha.graphics4.PipelineState;
+import kha.graphics5.TextureFilter;
+import kha.graphics4.TextureFormat;
+import kha.graphics4.VertexBuffer;
+import kha.graphics5.MipMapFilter;
 import kha.graphics4.TextureUnit;
+import kha.graphics4.IndexBuffer;
+import kha.graphics4.CompareMode;
+import kha.graphics4.VertexData;
+import kha.graphics4.CullMode;
+import kha.graphics4.Usage;
+import kha.Framebuffer;
 import kha.Shaders;
 import kha.System;
+import kha.Color;
+import kha.Image;
 
 class Main {
+	private static var vertices = new Array<VertexBuffer>();
+	private static var indices = new Array<IndexBuffer>();
+	private static var tvertices: VertexBuffer;
 	private static var pipeline: PipelineState;
 	private static var tpipeline: PipelineState;
-	private static var vertices = new Array<VertexBuffer>();
-	private static var tvertices:VertexBuffer;
-	private static var indices = new Array<IndexBuffer>();
-	private static var gridSize = 64;
-	private static var numInsts = gridSize * gridSize;
-	private static var step = 2 / gridSize;
+	private static var gridLen: ConstantLocation;
+	private static var gridLen2: ConstantLocation;
+	private static var texunit: TextureUnit;
+	private static var texunit2: TextureUnit;
+	private static var startex: Image;
 	private static var tex: Image;
 	private static var tex2: Image;
-	private static var gridLen:ConstantLocation;
-	private static var gridLen2:ConstantLocation;
-	private static var texunit:TextureUnit;
-	private static var texunit2:TextureUnit;
+	private static var gridSize = 64;
 	private static var swapbuffer = true;
+	private static var numInsts = gridSize * gridSize;
+	private static var step = 2 / gridSize;
 
 	public static function triangleGrid(which:Int):Void {
 		var k = -1;
@@ -99,7 +101,7 @@ class Main {
 		tpipeline.fragmentShader = Shaders.state_frag;
 		// pipeline.depthWrite = true;
 		tpipeline.depthMode = CompareMode.Less;
-		tpipeline.cullMode = CullMode.CounterClockwise;
+		// tpipeline.cullMode = CullMode.CounterClockwise;
 		tpipeline.compile();
 
 		tex2 = Image.createRenderTarget(gridSize, gridSize, TextureFormat.L8);
@@ -121,6 +123,48 @@ class Main {
 			ind[3] = 0; ind[4] = 2; ind[5] = 3;
 		indices[1].unlock();
 	}
+
+	// set initial state to texture
+	public static function renderStartTexture():Void {
+
+		var structure = new VertexStructure();
+			structure.add("pos", VertexData.Float3);
+
+		var spipeline = new PipelineState();
+		spipeline.inputLayout = [structure];
+		spipeline.vertexShader = Shaders.state_vert;
+		spipeline.fragmentShader = Shaders.initial_frag;
+		// pipeline.depthWrite = true;
+		spipeline.depthMode = CompareMode.Less;
+		// tpipeline.cullMode = CullMode.CounterClockwise;
+		spipeline.compile();
+
+		var startex = Image.create(gridSize, gridSize, TextureFormat.L8);
+		var startexunit = spipeline.getTextureUnit("tex");
+		// initialise state in the first texture
+		var mid = Std.int(gridSize / 2);
+		var d1 = gridSize * mid + mid;
+		var d2 = gridSize * (mid + 1) + mid;
+		var bytes = startex.lock();
+			bytes.fill(0, gridSize * gridSize, 0);
+			bytes.set(d1, 2);
+			bytes.set(d2, 2);
+		startex.unlock();
+		
+		var t = tex.g4;
+		t.begin();
+			t.setPipeline(spipeline);
+			t.setTexture(startexunit, startex);
+			t.setTextureParameters(startexunit, TextureAddressing.Clamp,
+											TextureAddressing.Clamp,
+											TextureFilter.PointFilter,
+											TextureFilter.PointFilter,
+											MipMapFilter.NoMipFilter);
+			t.setVertexBuffer(tvertices);
+			t.setIndexBuffer(indices[1]);
+			t.drawIndexedVertices();
+		t.end();
+	}
 	
 	public static function main(): Void {
 		System.start({title: "Cellular Automaton for brian's brain", width: 800, height: 600}, function (_) {
@@ -130,6 +174,7 @@ class Main {
 			// position structure, is different for each instance
 			structures[1] = new VertexStructure();
 			structures[1].add("trans", VertexData.Float2);
+			structures[1].instanced = true;
 			
 			pipeline = new PipelineState();
 			pipeline.inputLayout = structures;
@@ -153,16 +198,9 @@ class Main {
 			indices[0] = new IndexBuffer(6, Usage.StaticUsage);
 			fixedTriangleIndices();
 
-			// initialise state in the first texture
-			var mid = Std.int(gridSize / 2);
-			var d1 = gridSize * mid + mid;
-			var d2 = gridSize * (mid + 1) + mid;
-			var bytes = tex.lock();
-				bytes.fill(0, gridSize * gridSize, 0);
-				bytes.set(d1, 2);
-				bytes.set(d2, 2);
-			tex.unlock();
 			setupTextureRender();
+			
+			renderStartTexture();
 			// start rendering.
 			System.notifyOnFrames(render);
 		});
