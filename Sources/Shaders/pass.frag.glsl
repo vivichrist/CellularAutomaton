@@ -5,6 +5,6 @@ in vec2 uv;
 out vec4 FragColor;
 
 void main() {
-	float current = texture(tex, uv).x;
-	FragColor = vec4(current);
+	float col = texture(tex, uv).r;
+	FragColor = vec4(col);
 }
