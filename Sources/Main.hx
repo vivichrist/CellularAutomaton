@@ -1,7 +1,6 @@
 package;
 
 import kha.input.KeyCode;
-import kha.input.Mouse;
 import kha.input.Keyboard;
 import kha.graphics4.TextureFormat;
 import kha.graphics4.TextureFilter;
@@ -21,6 +20,7 @@ import kha.Shaders;
 import kha.Framebuffer;
 import kha.Scheduler;
 import kha.System;
+import gui.Gui;
 
 class Main {
 	private static var pipeline: PipelineState;
@@ -34,12 +34,13 @@ class Main {
 	private static var ping: Image;
 	private static var pong: Image;
 	private static var swap: Bool;
-	private static var gridSize = 1024;
-	private static var speed = 30;
+	private static var gridSize = 512;
 	private static var width = 1024;
 	private static var height = 1024;
 	private static var tf = TextureFormat.L8;
-	private static var taskt = 0;
+	private static var zgui:Gui;
+	public static var speed = 30;
+	public static var taskt = 0;
 
 	public static function initialiseState():Void {
 		// initial read is ping, so pong is the render target
@@ -80,7 +81,7 @@ class Main {
 		texture.unload();
 	}
 	// buffers for a full screen quad
-	public static function createBuffers(structure:VertexStructure) {
+	public static function createBuffers(structure:VertexStructure):Void {
 		vertices = new VertexBuffer(4, structure, Usage.StaticUsage);
 		var v = vertices.lock();
 			v.set(0, -1); v.set(1, -1); v.set(2, 0.5);
@@ -100,7 +101,7 @@ class Main {
 		System.start({title: "Shader", width: width, height: height}, function (_) {
 			structure = new VertexStructure();
 			structure.add("pos", VertexData.Float3);
-			
+			// main rendering pipeline
 			pipeline = new PipelineState();
 			pipeline.inputLayout = [structure];
 			pipeline.vertexShader = Shaders.shader_vert;
@@ -122,32 +123,37 @@ class Main {
 			ping = Image.createRenderTarget(gridSize, gridSize, tf);
 			pong = Image.createRenderTarget(gridSize, gridSize, tf);
 			initialiseState();
+			zgui = new Gui();
+
 			System.notifyOnFrames(render);
 			taskt = Scheduler.addTimeTask( update, 0, 1 / speed);
 			Keyboard.get().notify(onKey, onKeyRelease, null);
 		});
 	}
 
-	public static function onKey(key:KeyCode)
-	{
+	public static function onKey(key:KeyCode):Void {
 
 	}
 
-	public static function onKeyRelease(key:KeyCode)
-	{
-		switch (key)
-		{
+	public static function onKeyRelease(key:KeyCode) {
+		switch (key) {
 			case KeyCode.Up :
 			{
 				Scheduler.removeTimeTask(taskt);
-				speed = ((speed + 1) <= 60) ? speed + 1 : speed;
+				speed = (speed < 60) ? speed + 1 : speed;
 				taskt = Scheduler.addTimeTask( update, 0, 1 / speed);
 			}
 			case KeyCode.Down :
 			{
 				Scheduler.removeTimeTask(taskt);
-				speed = (speed - 1 > 0) ? speed - 1 : 1;
+				speed = (speed > 1) ? speed - 1 : 1;
 				taskt = Scheduler.addTimeTask( update, 0, 1 / speed);
+			}
+			case KeyCode.Escape :
+			{
+				Scheduler.removeTimeTask(taskt);
+				System.removeFramesListener(render);
+				System.stop();
 			}
 			default : {}
 		}
@@ -168,8 +174,10 @@ class Main {
 		g.setIndexBuffer(indices);
 		g.drawIndexedVertices();
 		g.end();
+
+		zgui.render(frames[0].g2);
 	}
-	public static function update() {
+	public static function update():Void {
 		// write to pong first
 		var p = swap ? pong.g4 : ping.g4;
 		p.begin();
