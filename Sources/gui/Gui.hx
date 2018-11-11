@@ -1,5 +1,6 @@
 package gui;
 
+import haxe.io.StringInput;
 import zui.Zui;
 import zui.Id;
 import zui.Ext;
@@ -8,10 +9,15 @@ import kha.graphics2.Graphics;
 import kha.Scheduler;
 
 class Gui {
-
+	// zui vars
 	private var ui:Zui;
 	private var hdl:Dynamic;
+	// app state
 	private var speed:Dynamic;
+	public var starts:Array<kha.math.Vector2>;
+	// parsing vars
+	private var config:StringInput;
+	private var loaded = false;
 
 	public function new() {
 		var theme = {
@@ -52,12 +58,21 @@ class Gui {
 
 		Assets.loadEverything(function() {
 			ui = new Zui({font: Assets.fonts.DejaVuSans, theme: theme});
+			loaded = true;
 		});
 		hdl = Id.handle({text: "/home"}); // Set initial path
 		speed = Id.handle({value: Main.speed});
 	}
 
-	public function render(g:Graphics) {
+	function readLine():Array<String> {
+		var line = config.readLine();
+		line = StringTools.trim(line);
+		var str = line.split(" ");
+		return str;
+	}
+
+	public function render(g:Graphics):Void {
+		if (!loaded) return;
 		ui.begin(g);
 		if (ui.window(Id.handle(), 10, 10, 400, 800, true)) {
 			var htab = Id.handle();
@@ -78,14 +93,15 @@ class Gui {
 				if (ui.panel(Id.handle({selected: true}), "Display Options")) {
 					ui.row([1/2, 1/2]);
 					var b = ui.button("Update");
-					speed.value = Main.speed;
+					if (speed.value + 1 == Main.speed || speed.value - 1 == Main.speed)
+						speed.value = Main.speed;
 					var f = ui.slider(speed, "FPS", 1, 60, false, 1);
-					if (ui.isHovered) ui.tooltip("Framerates/Animation Speed");
 					if (b) {
 						Scheduler.removeTimeTask(Main.taskt);
 						Main.speed = Std.int(f);
 						Main.taskt = Scheduler.addTimeTask( Main.update, 0, 1 / Main.speed);
 					}
+					if (ui.isHovered) ui.tooltip("Framerates/Animation Speed");
 				}
 			}
 		}

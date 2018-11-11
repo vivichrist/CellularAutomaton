@@ -3,18 +3,15 @@
 uniform sampler2D tex;
 in vec2 uv;
 out vec4 FragColor;
-const float dying_state = 0.3125;
-const float on_state = 0.625;
-const float epsilon = 0.005;
 
 void main() {
-	float col = texture(tex, uv).r;
-	if (col < dying_state - (dying_state - on_state) * 0.5) {
-		if (col < (dying_state - epsilon)) {
+	uint col = uint(round(texture(tex, uv).r * 255.0));
+	if (col < 160) {
+		if (col < 80) {
 			FragColor = vec4(vec3(0.0), 1.0);
 		}
 		else {
-			FragColor = vec4(0.25, 0.0, 0.0, 1.0);
+			FragColor = vec4(0.4, 0.0, 0.0, 1.0);
 		}
 	}
 	else {

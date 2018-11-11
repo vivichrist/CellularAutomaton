@@ -34,6 +34,7 @@ class Main {
 	private static var ping: Image;
 	private static var pong: Image;
 	private static var swap: Bool;
+	private static var showMenu: Bool;
 	private static var gridSize = 512;
 	private static var width = 1024;
 	private static var height = 1024;
@@ -99,6 +100,7 @@ class Main {
 
 	public static function main(): Void {
 		System.start({title: "Shader", width: width, height: height}, function (_) {
+			showMenu = true;
 			structure = new VertexStructure();
 			structure.add("pos", VertexData.Float3);
 			// main rendering pipeline
@@ -137,6 +139,10 @@ class Main {
 
 	public static function onKeyRelease(key:KeyCode) {
 		switch (key) {
+			case KeyCode.M :
+			{
+				showMenu = !showMenu;
+			}
 			case KeyCode.Up :
 			{
 				Scheduler.removeTimeTask(taskt);
@@ -175,7 +181,7 @@ class Main {
 		g.drawIndexedVertices();
 		g.end();
 
-		zgui.render(frames[0].g2);
+		if (showMenu) zgui.render(frames[0].g2);
 	}
 	public static function update():Void {
 		// write to pong first
