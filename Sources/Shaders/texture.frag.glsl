@@ -9,7 +9,7 @@ const uint dying_state = 80;
 
 void main() {
 	float stepsize = 1.0 / float(gridsize);
-	// previous state of this cell
+	// previous state of this cell working with an 8bit greyscale texture.
 	uint current = uint(round(texture(tex, uv).r * 255.0));
 	// gather surrounding previous state
 	uint state = 0;
