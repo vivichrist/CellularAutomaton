@@ -76,12 +76,13 @@ class Gui {
 		ui.begin(g);
 		if (ui.window(Id.handle(), 10, 10, 400, 800, true)) {
 			var htab = Id.handle();
-			if (ui.tab(htab, "Open File")) {
+			if (ui.tab(htab, "Open Points Config File")) {
 				if (ui.panel(Id.handle({selected: true}), "File Browser")) {
 					
 					ui.row([1/2, 1/2]);
 					ui.button("Cancel");
 					if (ui.button("Load")) {
+						// TODO:load file...
 						trace(hdl.text);
 					}
 					
