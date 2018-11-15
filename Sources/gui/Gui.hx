@@ -8,16 +8,13 @@ import kha.Assets;
 import kha.graphics2.Graphics;
 import kha.Scheduler;
 
-class Gui {
+class Gui
+{
 	// zui vars
 	private var ui:Zui;
 	private var hdl:Dynamic;
 	// app state
 	private var speed:Dynamic;
-	public var starts:Array<kha.math.Vector2>;
-	// parsing vars
-	private var config:StringInput;
-	private var loaded = false;
 
 	public function new() {
 		var theme = {
@@ -56,43 +53,34 @@ class Gui {
 			SEPARATOR_COL: 0xff262626,
 		};
 
-		Assets.loadEverything(function() {
-			ui = new Zui({font: Assets.fonts.DejaVuSans, theme: theme});
-			loaded = true;
-		});
+		ui = new Zui({font: Assets.fonts.DejaVuSans, theme: theme});
+
 		hdl = Id.handle({text: "/home"}); // Set initial path
 		speed = Id.handle({value: Main.speed});
 	}
 
-	function readLine():Array<String> {
-		var line = config.readLine();
-		line = StringTools.trim(line);
-		var str = line.split(" ");
-		return str;
-	}
-
 	public function render(g:Graphics):Void {
-		if (!loaded) return;
+		// if (!Main.loaded)
+		// 	return;
 		ui.begin(g);
 		if (ui.window(Id.handle(), 10, 10, 400, 800, true)) {
 			var htab = Id.handle();
 			if (ui.tab(htab, "Open Points Config File")) {
 				if (ui.panel(Id.handle({selected: true}), "File Browser")) {
-					
-					ui.row([1/2, 1/2]);
+					ui.row([1 / 2, 1 / 2]);
 					ui.button("Cancel");
 					if (ui.button("Load")) {
 						// TODO:load file...
 						trace(hdl.text);
 					}
-					
+
 					hdl.text = ui.textInput(hdl, "Path");
 					Ext.fileBrowser(ui, hdl);
 				}
 			}
 			if (ui.tab(htab, "Options")) {
 				if (ui.panel(Id.handle({selected: true}), "Display Options")) {
-					ui.row([1/2, 1/2]);
+					ui.row([1 / 2, 1 / 2]);
 					var b = ui.button("Update");
 					if (speed.value + 1 == Main.speed || speed.value - 1 == Main.speed)
 						speed.value = Main.speed;
@@ -100,9 +88,10 @@ class Gui {
 					if (b) {
 						Scheduler.removeTimeTask(Main.taskt);
 						Main.speed = Std.int(f);
-						Main.taskt = Scheduler.addTimeTask( Main.update, 0, 1 / Main.speed);
+						Main.taskt = Scheduler.addTimeTask(Main.update, 0, 1 / Main.speed);
 					}
-					if (ui.isHovered) ui.tooltip("Framerates/Animation Speed");
+					if (ui.isHovered)
+						ui.tooltip("Framerates/Animation Speed");
 				}
 			}
 		}

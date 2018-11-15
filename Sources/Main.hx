@@ -20,6 +20,7 @@ import kha.Shaders;
 import kha.Framebuffer;
 import kha.Scheduler;
 import kha.System;
+import kha.Assets;
 import gui.Gui;
 
 class Main {
@@ -35,11 +36,13 @@ class Main {
 	private static var pong: Image;
 	private static var swap: Bool;
 	private static var showMenu: Bool;
-	private static var gridSize = 512;
 	private static var width = 1024;
 	private static var height = 1024;
 	private static var tf = TextureFormat.L8;
 	private static var zgui:Gui;
+	private static var starts:PixelParser;
+	public static var gridSize = 512;
+	public static var loaded = false;
 	public static var speed = 30;
 	public static var taskt = 0;
 
@@ -47,16 +50,17 @@ class Main {
 		// initial read is ping, so pong is the render target
 		swap = true;
 		var texture = Image.create(gridSize, gridSize, tf);
-
-		var mid = Std.int(gridSize / 2);
-		var d1 = gridSize * mid + mid;
-		var d2 = gridSize * (mid + 1) + mid;
+		starts = new PixelParser(Assets.blobs.Default_conf);
 		// two pixels set at the center, all else is zero
 		// changing tf you should change the following too.
 		var t = texture.lock();
 			t.fill(0, gridSize * gridSize, 0);
-			t.set(d1, 160);
-			t.set(d2, 160);
+			for (s in starts.pixels)
+			{
+				var d = gridSize * s.y + s.x;
+				// trace("pixels to set: ", d, " - >", s.x, ", ", s.y);
+				t.set(d, 160);
+			}
 		texture.unlock();
 		// straight pass through writes texture -> ping
 		var ipipeline = new PipelineState();
@@ -124,12 +128,14 @@ class Main {
 			texUnit2 = tpipeline.getTextureUnit("tex");
 			ping = Image.createRenderTarget(gridSize, gridSize, tf);
 			pong = Image.createRenderTarget(gridSize, gridSize, tf);
-			initialiseState();
-			zgui = new Gui();
-
-			System.notifyOnFrames(render);
-			taskt = Scheduler.addTimeTask( update, 0, 1 / speed);
-			Keyboard.get().notify(onKey, onKeyRelease, null);
+			Assets.loadEverything(function() {
+				loaded = true;
+				zgui = new Gui();
+				initialiseState();
+				System.notifyOnFrames(render);
+				taskt = Scheduler.addTimeTask( update, 0, 1 / speed);
+				Keyboard.get().notify(onKey, onKeyRelease, null);
+			});
 		});
 	}
 
